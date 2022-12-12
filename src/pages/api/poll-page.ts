@@ -6,7 +6,10 @@ export default async function PollPost(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const posts = await pollPage(3);
+  const pageQueryParam = req.query.page;
+  const pageToPoll = pageQueryParam ? +pageQueryParam : 1;
+
+  const posts = await pollPage(pageToPoll);
 
   await Promise.all(
     posts.map((it) => {
