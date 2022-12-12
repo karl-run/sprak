@@ -23,7 +23,7 @@ export default async function PollPost(
     const lengths = await Promise.all(
       Array.from(Array(totalPages - 1).keys()).map(async (it) => {
         const page = it + 2;
-        const timeToSleep = page * 1337 + getRandomTime(1337, 1337 * 2);
+        const timeToSleep = page * 137 + getRandomTime(137, 137 * 3);
         console.log(`Sleeping ${page} for ${timeToSleep / 1000} seconds`);
 
         await wait(timeToSleep);
