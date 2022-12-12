@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { pollPage } from "../../scraping/client";
+import { getRandomTime, wait } from "../../scraping/utils";
 
 export default async function PollPost(
   req: NextApiRequest,
@@ -25,8 +26,7 @@ export default async function PollPost(
         const timeToSleep = page * 1337 + getRandomTime(1337, 1337 * 2);
         console.log(`Sleeping ${page} for ${timeToSleep / 1000} seconds`);
 
-        await new Promise((r) => setTimeout(r, timeToSleep));
-
+        await wait(timeToSleep);
         return pollPage(page).catch((err) => {
           console.error("Error polling page", page, err);
           return [0, 0];
@@ -39,10 +39,4 @@ export default async function PollPost(
         length + lengths.map((it) => it[0]).reduce((acc, item) => acc + item),
     });
   }
-}
-
-function getRandomTime(from: number, to: number) {
-  const min = Math.ceil(from);
-  const max = Math.floor(to);
-  return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
 }
