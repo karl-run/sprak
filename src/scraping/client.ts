@@ -6,13 +6,16 @@ const ROOT = process.env.ROOT_URL;
 const BASE_PARAMS = `search-qf?searchkey=SEARCH_ID_JOB_FULLTIME&occupation=0.23&sort=RELEVANCE&vertical=job`;
 const URL = (page: number) => `${ROOT}/${BASE_PARAMS}&page=${page}`;
 
-export async function pollPage(page: number): Promise<PostResponse[]> {
+export async function pollPage(
+  page: number
+): Promise<[count: number, totalPages: number]> {
   const t1 = performance.now();
   const result = await fetch(URL(page));
   const t2 = performance.now();
   const time = t2 - t1;
 
   if (!result.ok) {
+    console.log("Unable to fetch page", page, result.status);
     await prisma.pageScrapeLog.create({
       data: {
         page: page,
@@ -22,7 +25,7 @@ export async function pollPage(page: number): Promise<PostResponse[]> {
         response: result.status,
       },
     });
-    return [];
+    return [0, 1];
   }
 
   const json = await result.json();
@@ -36,7 +39,20 @@ export async function pollPage(page: number): Promise<PostResponse[]> {
     },
   });
 
-  return mapPagesResult(json);
+  const posts = mapPagesResult(json);
+
+  await Promise.all(
+    posts.map((it) => {
+      const item = { ...it, inserted: new Date() };
+      return prisma.post.upsert({
+        where: { ad_id: it.ad_id },
+        create: item,
+        update: item,
+      });
+    })
+  );
+
+  return [posts.length, json.metadata.paging.last];
 }
 
 export async function pollFirstEmptyPost(): Promise<Post | null> {

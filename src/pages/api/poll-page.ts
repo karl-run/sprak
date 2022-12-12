@@ -1,5 +1,4 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "../../db/prisma";
 import { pollPage } from "../../scraping/client";
 
 export default async function PollPost(
@@ -7,20 +6,43 @@ export default async function PollPost(
   res: NextApiResponse
 ) {
   const pageQueryParam = req.query.page;
-  const pageToPoll = pageQueryParam ? +pageQueryParam : 1;
+  const pageToPoll = pageQueryParam ? +pageQueryParam : -1;
 
-  const posts = await pollPage(pageToPoll);
+  if (pageToPoll >= 1) {
+    const [length] = await pollPage(pageToPoll);
+    res.status(200).json({ inserted_posts: length });
+  } else {
+    const [length, totalPages] = await pollPage(1);
+    if (totalPages < 2) {
+      console.warn("Only a single page, probably not right");
+      res.status(200).json({ inserted_posts: length });
+      return;
+    }
 
-  await Promise.all(
-    posts.map((it) => {
-      const item = { ...it, inserted: new Date() };
-      return prisma.post.upsert({
-        where: { ad_id: it.ad_id },
-        create: item,
-        update: item,
-      });
-    })
-  );
+    const lengths = await Promise.all(
+      Array.from(Array(totalPages - 1).keys()).map(async (it) => {
+        const page = it + 2;
+        const timeToSleep = page * 1337 + getRandomTime(1337, 1337 * 2);
+        console.log(`Sleeping ${page} for ${timeToSleep / 1000} seconds`);
 
-  res.status(200).json({ inserted_posts: posts.length });
+        await new Promise((r) => setTimeout(r, timeToSleep));
+
+        return pollPage(page).catch((err) => {
+          console.error("Error polling page", page, err);
+          return [0, 0];
+        });
+      })
+    );
+
+    res.status(200).json({
+      inserted_posts:
+        length + lengths.map((it) => it[0]).reduce((acc, item) => acc + item),
+    });
+  }
+}
+
+function getRandomTime(from: number, to: number) {
+  const min = Math.ceil(from);
+  const max = Math.floor(to);
+  return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
 }
