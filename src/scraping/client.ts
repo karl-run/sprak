@@ -43,11 +43,10 @@ export async function pollPage(
 
   await Promise.all(
     posts.map((it) => {
-      const item = { ...it, inserted: new Date() };
       return prisma.post.upsert({
         where: { ad_id: it.ad_id },
-        create: item,
-        update: item,
+        create: { ...it, inserted: new Date() },
+        update: it,
       });
     })
   );
