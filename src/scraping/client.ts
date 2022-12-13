@@ -2,6 +2,8 @@ import * as R from "remeda";
 import { prisma, Post } from "../db/prisma";
 import { getPostText } from "./dom";
 import { timeAsyncFn } from "./timing";
+import { getMissingText } from "../db/queries";
+import { getRandomTime, wait } from "./utils";
 
 const ROOT = process.env.ROOT_URL;
 const BASE_PARAMS = `search-qf?searchkey=SEARCH_ID_JOB_FULLTIME&occupation=0.23&sort=RELEVANCE&vertical=job`;
@@ -52,20 +54,34 @@ export async function pollPage(
   return [posts.length, json.metadata.paging.last];
 }
 
-export async function pollFirstEmptyPost(): Promise<Post | null> {
-  const postWithNoText: Post | null = await prisma.post.findFirst({
-    where: { text: null },
-  });
+export async function updatePostTexts(count: number): Promise<Record<number, string | null>> {
+  const posts = await getMissingText(count);
+  const texts = R.fromPairs(
+    await Promise.all(
+      posts.map(async (it) => {
+        await wait(getRandomTime(13, 269));
+        return [it.ad_id, await pollPost(it)] satisfies [number, string | null];
+      })
+    )
+  );
 
-  if (postWithNoText == null) {
-    console.warn("Found post with no text, skipping");
-    return null;
-  }
+  await prisma.$transaction(
+    posts.map((it) => {
+      return prisma.post.update({
+        where: { ad_id: it.ad_id },
+        data: { text: texts[it.ad_id] },
+      });
+    })
+  );
 
-  const [response, time] = await timeAsyncFn(() => fetch(postWithNoText.link));
+  return texts;
+}
+
+export async function pollPost(post: Post): Promise<string | null> {
+  const [response, time] = await timeAsyncFn(() => fetch(post.link));
   await prisma.postScrapeLog.create({
     data: {
-      url: postWithNoText.link,
+      url: post.link,
       time,
       timestamp: new Date(),
       response: response.status,
@@ -73,14 +89,7 @@ export async function pollFirstEmptyPost(): Promise<Post | null> {
   });
 
   const doc = await response.text();
-  const text = getPostText(doc);
-
-  await prisma.post.update({
-    where: { id: postWithNoText.id },
-    data: { text, updated: new Date() },
-  });
-
-  return postWithNoText;
+  return getPostText(doc);
 }
 
 type PostResponse = {

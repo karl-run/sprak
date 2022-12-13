@@ -1,6 +1,6 @@
+import * as R from "remeda";
 import { NextApiRequest, NextApiResponse } from "next";
-import { pollFirstEmptyPost } from "../../scraping/client";
-import { getRandomTime, wait } from "../../scraping/utils";
+import { updatePostTexts } from "../../scraping/client";
 
 export default async function PollPost(
   req: NextApiRequest,
@@ -9,15 +9,12 @@ export default async function PollPost(
   const postQueryParam = req.query.posts;
   const postsToPoll = postQueryParam ? +postQueryParam : 1;
 
-  const results = [];
-  for (let i = 0; i < postsToPoll; i++) {
-    await wait(getRandomTime(69, 137));
-    const item = await pollFirstEmptyPost();
-
-    results.push(item);
-  }
+  const updatedPosts = await updatePostTexts(postsToPoll);
 
   res.status(200).json({
-    polled: results.map((it) => it?.ad_id ?? null),
+    polled: R.toPairs(updatedPosts).map(([adId, result]) => [
+      adId,
+      result?.length ?? null,
+    ]),
   });
 }
