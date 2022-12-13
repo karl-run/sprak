@@ -9,7 +9,9 @@ async function Page(): Promise<JSX.Element> {
     <div>
       <h3>posts</h3>
       {posts.map((post) => (
-        <div>{post.title}</div>
+        <div key={post.ad_id}>
+          {post.text != null ? "✓" : "✖"} {post.title}
+        </div>
       ))}
     </div>
   );
