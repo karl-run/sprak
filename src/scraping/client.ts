@@ -54,8 +54,16 @@ export async function pollPage(
   return [posts.length, json.metadata.paging.last];
 }
 
-export async function updatePostTexts(count: number): Promise<Record<number, string | null>> {
+export async function updatePostTexts(
+  count: number
+): Promise<Record<number, string | null>> {
   const posts = await getMissingText(count);
+
+  if (posts.length === 0) {
+    console.log("No posts to update");
+    return {};
+  }
+
   const texts = R.fromPairs(
     await Promise.all(
       posts.map(async (it) => {
