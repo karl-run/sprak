@@ -10,7 +10,7 @@ async function Page(): Promise<JSX.Element> {
       <h3>posts</h3>
       {posts.map((post) => (
         <div key={post.ad_id}>
-          {post.text != null ? "✓" : "✖"} {post.title}
+          {post.text != null ? "✓" : "✖"} {post.heading ?? post.title}
         </div>
       ))}
     </div>
