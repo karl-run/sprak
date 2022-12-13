@@ -1,6 +1,7 @@
 import * as R from "remeda";
 import { prisma, Post } from "../db/prisma";
-import { JSDOM } from "jsdom";
+import { getPostText } from "./dom";
+import { timeAsyncFn } from "./timing";
 
 const ROOT = process.env.ROOT_URL;
 const BASE_PARAMS = `search-qf?searchkey=SEARCH_ID_JOB_FULLTIME&occupation=0.23&sort=RELEVANCE&vertical=job`;
@@ -9,10 +10,7 @@ const URL = (page: number) => `${ROOT}/${BASE_PARAMS}&page=${page}`;
 export async function pollPage(
   page: number
 ): Promise<[count: number, totalPages: number]> {
-  const t1 = performance.now();
-  const result = await fetch(URL(page));
-  const t2 = performance.now();
-  const time = t2 - t1;
+  const [result, time] = await timeAsyncFn(() => fetch(URL(page)));
 
   if (!result.ok) {
     console.log("Unable to fetch page", page, result.status);
@@ -41,7 +39,7 @@ export async function pollPage(
 
   const posts = mapPagesResult(json);
 
-  await Promise.all(
+  await prisma.$transaction(
     posts.map((it) => {
       return prisma.post.upsert({
         where: { ad_id: it.ad_id },
@@ -64,11 +62,7 @@ export async function pollFirstEmptyPost(): Promise<Post | null> {
     return null;
   }
 
-  const t1 = performance.now();
-  const response = await fetch(postWithNoText.link);
-  const t2 = performance.now();
-  const time = t2 - t1;
-
+  const [response, time] = await timeAsyncFn(() => fetch(postWithNoText.link));
   await prisma.postScrapeLog.create({
     data: {
       url: postWithNoText.link,
@@ -79,26 +73,7 @@ export async function pollFirstEmptyPost(): Promise<Post | null> {
   });
 
   const doc = await response.text();
-  const { document } = new JSDOM(doc, {}).window;
-
-  if (document == null) {
-    console.warn("Document is null, skipping");
-    return null;
-  }
-
-  document
-    .querySelectorAll("style")
-    .forEach((it: HTMLStyleElement) => it.remove());
-  document
-    .querySelectorAll("script")
-    .forEach((it: HTMLScriptElement) => it.remove());
-
-  const text = document
-    .querySelector(".u-word-break")
-    ?.textContent?.replace(/\s+/g, " ")
-    .trim();
-
-  console.log("text yoo", text);
+  const text = getPostText(doc);
 
   await prisma.post.update({
     where: { id: postWithNoText.id },

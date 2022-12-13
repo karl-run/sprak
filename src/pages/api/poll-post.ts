@@ -6,20 +6,18 @@ export default async function PollPost(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  await wait(getRandomTime(69, 1337));
-  const first = await pollFirstEmptyPost();
-  await wait(getRandomTime(69, 1337));
-  const second = await pollFirstEmptyPost();
-  await wait(getRandomTime(69, 1337));
-  const third = await pollFirstEmptyPost();
+  const postQueryParam = req.query.posts;
+  const postsToPoll = postQueryParam ? +postQueryParam : 1;
 
-  res
-    .status(200)
-    .json({
-      polled: [
-        first?.ad_id ?? null,
-        second?.ad_id ?? null,
-        third?.ad_id ?? null,
-      ],
-    });
+  const results = [];
+  for (let i = 0; i < postsToPoll; i++) {
+    await wait(getRandomTime(69, 137));
+    const item = await pollFirstEmptyPost();
+
+    results.push(item);
+  }
+
+  res.status(200).json({
+    polled: results.map((it) => it?.ad_id ?? null),
+  });
 }
