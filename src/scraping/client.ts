@@ -77,7 +77,7 @@ export async function updatePostTexts(
     posts.map((it) => {
       return prisma.post.update({
         where: { ad_id: it.ad_id },
-        data: { text: texts[it.ad_id] },
+        data: { text: texts[it.ad_id], updated: new Date() },
       });
     })
   );
