@@ -1,6 +1,9 @@
 import { Post } from "@prisma/client";
+import { format } from "date-fns";
 import React from "react";
 import { prisma } from "../db/prisma";
+
+import styles from "./page.module.css";
 
 async function Page(): Promise<JSX.Element> {
   const posts: Post[] = await prisma.post.findMany({
@@ -12,7 +15,14 @@ async function Page(): Promise<JSX.Element> {
       <h3>posts</h3>
       {posts.map((post) => (
         <div key={post.ad_id}>
-          {post.text != null ? "✓" : "✖"} {post.heading ?? post.title}
+          <span>{post.text != null ? "✓" : "✖"}</span>
+          <span>{post.heading ?? post.title} </span>
+          <span
+            className={styles.smoll}
+            title={(post.updated ?? post.inserted).toISOString()}
+          >
+            {format(post.updated ?? post.inserted, "yyyy-MM-dd")}
+          </span>
         </div>
       ))}
     </div>
