@@ -3,7 +3,9 @@ import React from "react";
 import { prisma } from "../db/prisma";
 
 async function Page(): Promise<JSX.Element> {
-  const posts: Post[] = await prisma.post.findMany();
+  const posts: Post[] = await prisma.post.findMany({
+    orderBy: { updated: "desc" },
+  });
 
   return (
     <div>
