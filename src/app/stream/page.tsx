@@ -3,8 +3,12 @@ import { format } from "date-fns";
 import React, { Suspense } from "react";
 import * as R from "remeda";
 import { prisma } from "../../db/prisma";
+import { headers } from "next/headers";
 
 async function Page(): Promise<JSX.Element> {
+  // This is normally how you would get something user specific, causing this to be a SSR-ed page
+  const userCookie = headers().get("user-specifi-cookie");
+
   const posts: Post[] = await prisma.post.findMany({
     orderBy: { updated: "desc" },
     take: 10,
@@ -24,21 +28,6 @@ async function Page(): Promise<JSX.Element> {
   );
 }
 
-function PostItem({ post }: { post: Post }): JSX.Element {
-  return (
-    <div>
-      <span>{post.text != null ? "✓" : "✖"}</span>
-      <span>{post.heading ?? post.title} </span>
-      <span
-        className="text-xs"
-        title={(post.updated ?? post.inserted).toISOString()}
-      >
-        {format(post.updated ?? post.inserted, "yyyy-MM-dd")}
-      </span>
-    </div>
-  );
-}
-
 async function TheRest() {
   const posts: Post[] = await prisma.post.findMany({
     orderBy: { updated: "desc" },
@@ -54,6 +43,21 @@ async function TheRest() {
   );
 }
 
+function PostItem({ post }: { post: Post }): JSX.Element {
+  return (
+    <div>
+      <span>{post.text != null ? "✓" : "✖"}</span>
+      <span>{post.heading ?? post.title} </span>
+      <span
+        className="text-xs"
+        title={(post.updated ?? post.inserted).toISOString()}
+      >
+        {format(post.updated ?? post.inserted, "yyyy-MM-dd")}
+      </span>
+    </div>
+  );
+}
+
 function Skellington(): JSX.Element {
   return (
     <div>
@@ -64,7 +68,5 @@ function Skellington(): JSX.Element {
     </div>
   );
 }
-
-export const revalidate = 86400;
 
 export default Page;
