@@ -4,8 +4,6 @@ import React, { Suspense } from "react";
 import * as R from "remeda";
 import { prisma } from "../../db/prisma";
 
-import styles from "../page.module.css";
-
 async function Page(): Promise<JSX.Element> {
   const posts: Post[] = await prisma.post.findMany({
     orderBy: { updated: "desc" },
@@ -33,7 +31,7 @@ function PostItem({ post }: { post: Post }): JSX.Element {
       <span>{post.text != null ? "✓" : "✖"}</span>
       <span>{post.heading ?? post.title} </span>
       <span
-        className={styles.smoll}
+        className="text-xs"
         title={(post.updated ?? post.inserted).toISOString()}
       >
         {format(post.updated ?? post.inserted, "yyyy-MM-dd")}
@@ -62,5 +60,7 @@ function Skellington(): JSX.Element {
     </div>
   );
 }
+
+export const revalidate = 86400;
 
 export default Page;

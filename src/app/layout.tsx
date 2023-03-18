@@ -1,4 +1,4 @@
-export const revalidate = 3600;
+import "./globals.css";
 
 export default function RootLayout({
   children,
