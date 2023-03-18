@@ -7,19 +7,18 @@ import { prisma } from "../../db/prisma";
 async function Page(): Promise<JSX.Element> {
   const posts: Post[] = await prisma.post.findMany({
     orderBy: { updated: "desc" },
+    take: 10,
   });
-
-  const [instant, stream] = R.splitAt(posts, 10);
 
   return (
     <div>
-      <h3>posts</h3>
-      {instant.map((post) => (
+      <h3 className="p-4">posts</h3>
+      {posts.map((post) => (
         <PostItem key={post.ad_id} post={post} />
       ))}
       <Suspense fallback={<Skellington />}>
         {/* @ts-expect-error Server Component */}
-        <TheRest items={stream} />
+        <TheRest />
       </Suspense>
     </div>
   );
@@ -40,10 +39,15 @@ function PostItem({ post }: { post: Post }): JSX.Element {
   );
 }
 
-async function TheRest({ items }: { items: Post[] }) {
+async function TheRest() {
+  const posts: Post[] = await prisma.post.findMany({
+    orderBy: { updated: "desc" },
+    skip: 10,
+  });
+
   return (
     <>
-      {items.map((post) => (
+      {posts.map((post) => (
         <PostItem key={post.ad_id} post={post} />
       ))}
     </>
