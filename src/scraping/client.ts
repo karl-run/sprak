@@ -12,7 +12,9 @@ const URL = (page: number) => `${ROOT}/${BASE_PARAMS}&page=${page}`;
 export async function pollPage(
   page: number
 ): Promise<[count: number, totalPages: number]> {
-  const [result, time] = await timeAsyncFn(() => fetch(URL(page)));
+  const urlToFetch = URL(page);
+  console.log("Fetching page", page, urlToFetch);
+  const [result, time] = await timeAsyncFn(() => fetch(urlToFetch));
 
   if (!result.ok) {
     console.log("Unable to fetch page", page, result.status);
@@ -113,6 +115,12 @@ type PostResponse = {
 };
 
 function mapPagesResult(json: any): PostResponse[] {
+  const basePath = process.env.ROOT_URL?.replace("/api", "");
+
+  if (basePath == null) {
+    throw new Error("ROOT_URL is not set!");
+  }
+
   return R.pipe(
     json,
     R.prop("docs"),
@@ -122,7 +130,7 @@ function mapPagesResult(json: any): PostResponse[] {
       heading: it.heading,
       title: it.job_title,
       company: it.company_name,
-      link: it.ad_link,
+      link: `${basePath}/${it.ad_id}`,
       ad_type: it.ad_type,
       timestamp: new Date(it.timestamp),
       location: it.location,
