@@ -21,7 +21,6 @@ async function Page(): Promise<JSX.Element> {
         <PostItem key={post.ad_id} post={post} />
       ))}
       <Suspense fallback={<Skellington />}>
-        {/* @ts-expect-error Server Component */}
         <TheRest />
       </Suspense>
     </div>
